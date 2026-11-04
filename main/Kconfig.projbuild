@@ -1,0 +1,170 @@
+# Purpose: Build options for the anchor box firmware (bench / test switches, monitoring-host watch settings).
+# Version: v10 (2026-10-18) - v10: RESTOCK_POLL_S (cold-box EXPECTED? question, ANC-45); the box token also covers POST /restock yes / no (WF-502). v9 (2026-10-15) - v9: MODE_POLL_S (DOCK / LEAVE taps, ANC-44); the box token also covers POST /mode DOCK / MOTOR (D-151). v8 (2026-10-11) - v8: HOT_WATER_POLL_S (HOT WATER tap, ANC-43); the box token also covers POST /hot-water. v7 (2026-10-09) - v7: FILL_POLL_S (tank-fill taps, ANC-41); the box token also covers POST /fill. v6 (2026-10-07) - v6: ALERTS_POLL_S (engine alerts, ANQ-10). v5 (2026-10-06) - v5: night-watch remote (ENGINE_PORT, NIGHT_WATCH_TOKEN / _POLL_S - ANQ-30, ANC-27); PI_WATCH help
+#   reworded for the cut-over (ON via sdkconfig.defaults, ANC-29). v4: monitoring-host watch settings + HOSTWATCH_TEST (ANC-25). v3: REMOTE_OUTPUT_TEST (one-off wiring check). v2: Wi-Fi login for OTA
+# Scope: PRODUCTION - anchor-box firmware, live on the box at the nav station since 2026-10-02 (installed by signed OTA).
+# Architecture: anchor-box firmware; read by ESP-IDF menuconfig, used in app_main.c / ui_watch.c / net.c /
+#   hostwatch_ctl.c / n2k.c / nightwatch_ctl.c / alerts_ctl.c / fill_ctl.c.
+# Invocation: idf.py menuconfig -> "Anchor box"; or set in sdkconfig.defaults / sdkconfig.bench.
+menu "Anchor box"
+
+    config ANCHORBOX_DEMO_CLOCK
+        bool "BENCH: show a made-up time (from uptime, starts 12:34)"
+        default n
+        help
+            Only to check the digits render. NEVER in a boat build: the box must never show a wrong time.
+
+    config ANCHORBOX_BENCH_TESTS
+        bool "BENCH: DO0 / DO1 test toggles on the WATCH placeholder"
+        default n
+        help
+            For checking the isolated outputs with a meter. DO0 lights the panel Anchor Drag lamp (AL-12), DO1 the Automation lamp (AL-13).
+
+    config ANCHORBOX_REMOTE_OUTPUT_TEST
+        bool "TEST ONLY: POST /test/output?do=0&s=10 pulses an output (max 15 s, then OFF)"
+        default n
+        help
+            One-off wiring check at the boat with Lee's yes (sdkconfig.outtest). Never left on the box.
+
+    config ANCHORBOX_HOSTWATCH_TEST
+        bool "TEST ONLY: POST /test/hostwatch?pi=down|ok&router=down|up&cerbo=silent&bus=silent fakes the monitor inputs"
+        default n
+        help
+            Proves DO1 -> panel AL-13 aboard with Lee's yes (sdkconfig.hwtest). Fakes end after 10 min.
+            Never left on the box.
+
+    menu "Monitoring-host watch (DO1 -> panel AL-13 'Automation', ANC-25)"
+
+        config ANCHORBOX_PI_WATCH
+            bool "Watch the Pi SignalK over Wi-Fi"
+            default n
+            help
+                The automation-host watch (ANC-25). Kconfig default stays n; the release build turns it ON in
+                sdkconfig.defaults since the cut-over (ANQ-25, ANC-29). ON with nothing answering the health or
+                fallback path on PI_HOST:PI_PORT = AL-13 lit after PI_DOWN_AFTER_S (router answering). The Cerbo
+                watch (N2K) runs either way. In a HOSTWATCH_TEST build a faked pi=down still exercises the Pi logic.
+
+        config ANCHORBOX_PI_HOST
+            string "Pi (SignalK + rules engine) address"
+            default "192.168.1.10"
+            help
+                Also the rules engine host for the night-watch control (ENGINE_PORT).
+
+        config ANCHORBOX_PI_PORT
+            int "SignalK HTTP port"
+            default 3000
+
+        config ANCHORBOX_PI_HEALTH_PATH
+            string "Health path (the engine's automation.health.healthy)"
+            default "/signalk/v1/api/vessels/self/automation/health/healthy"
+
+        config ANCHORBOX_PI_FALLBACK_PATH
+            string "Fallback path while the health path answers 404 (before the cut-over)"
+            default "/signalk/v1/api/vessels/self/navigation/position"
+
+        config ANCHORBOX_PI_POLL_S
+            int "Poll the Pi every (s)"
+            default 10
+
+        config ANCHORBOX_PI_HEALTH_FRESH_S
+            int "Health timestamp counts as fresh under (s)"
+            default 90
+            help
+                The engine republishes automation.health.* on change plus a 60 s keep-alive
+                (your-pi-hostname spec/10-Engine/README.md), so a 60 s limit would flap; 90 s = one missed
+                keep-alive plus margin.
+
+        config ANCHORBOX_PI_FALLBACK_FRESH_S
+            int "Fallback (position) timestamp counts as fresh under (s)"
+            default 60
+
+        config ANCHORBOX_PI_DOWN_AFTER_S
+            int "Pi unhealthy this long -> router check -> DO1 (s)"
+            default 60
+
+        config ANCHORBOX_ROUTER_HOST
+            string "Router to ping before blaming the Pi"
+            default "192.168.1.1"
+
+        config ANCHORBOX_CERBO_SILENT_S
+            int "No frame from the Cerbo's N2K addresses this long -> DO1 (s)"
+            default 180
+
+        config ANCHORBOX_CERBO_MFR
+            int "N2K manufacturer code that marks the Cerbo's addresses (Victron Energy = 358)"
+            default 358
+
+        config ANCHORBOX_HOSTWATCH_RELEASE_S
+            int "Device healthy this long -> DO1 released (s)"
+            default 30
+
+    endmenu
+
+    menu "Night watch remote (ANQ-30, ANC-27 - your-pi-hostname D-118 / WF-114)"
+
+        config ANCHORBOX_ENGINE_PORT
+            int "Rules engine HTTP port (GET / POST /night-watch on PI_HOST)"
+            default 8200
+
+        config ANCHORBOX_NIGHT_WATCH_TOKEN
+            string "Bearer token for POST /night-watch, /ack and /fill (the box token)"
+            default ""
+            help
+                Set in sdkconfig.secrets (gitignored) by Lee - NEVER in a committed file. Empty = the box still
+                shows the engine's state but the bar / ALERT / FILL buttons cannot be tapped ("no token").
+
+        config ANCHORBOX_NIGHT_WATCH_POLL_S
+            int "Ask the engine every (s)"
+            default 5
+
+        config ANCHORBOX_ALERTS_POLL_S
+            int "Ask the engine for its alerts (GET /alerts) every (s)"
+            default 2
+            help
+                ANQ-10: the rules engine's active P1 / P2 alarms for the ALERT screen. A tap acks them (POST /ack, ANC-33 / D-122).
+
+        config ANCHORBOX_HOT_WATER_POLL_S
+            int "Ask the engine for its hot-water run (GET /hot-water) every (s)"
+            default 10
+            help
+                ANC-43 / Ship's Automation D-135: WATCH's HOT WATER button (minutes left / READY). A tap posts at once.
+
+        config ANCHORBOX_MODE_POLL_S
+            int "Ask the engine for the boat mode (GET /mode) every (s)"
+            default 10
+            help
+                ANC-44 / Ship's Automation D-151: AT DOCK on WATCH + the LEAVE button (offered only while a crew phone is aboard). A tap posts at once.
+
+        config ANCHORBOX_RESTOCK_POLL_S
+            int "Ask the engine whether a cold box is asking 'expected?' (GET /restock) every (s)"
+            default 10
+            help
+                ANC-45 / Ship's Automation WF-502 (D-128): the EXPECTED? screen (YES = that box's alarm waits 2 h, NO = the alarm now). A tap posts at once.
+
+        config ANCHORBOX_WATCHKEEPER_POLL_S
+            int "Ask the engine for the watchkeeper timer (GET /watch) every (s)"
+            default 5
+            help
+                ANQ-27 / Ship's Automation WF-614 (D-161): the WATCH CHECK-IN screen at 15 / 20 / 25 min since the last I'm up. A tap posts I'M UP at once.
+
+        config ANCHORBOX_FILL_POLL_S
+            int "Ask the engine for its tank-fill sessions (GET /fill) every (s)"
+            default 10
+            help
+                ANC-41 / D-129: WATCH's FILL button ('FILLING' while a fill session is on). Every 2 s while the FILL
+                page is open.
+
+    endmenu
+
+    config ANCHORBOX_WIFI_SSID
+        string "Wi-Fi network for OTA updates"
+        default ""
+        help
+            Set in sdkconfig.secrets (gitignored). Empty = Wi-Fi off.
+
+    config ANCHORBOX_WIFI_PASSWORD
+        string "Wi-Fi password"
+        default ""
+        help
+            Set in sdkconfig.secrets (gitignored) by Lee. Never committed.
+
+endmenu

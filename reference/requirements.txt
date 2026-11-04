@@ -1,0 +1,10 @@
+# Purpose: Python packages for the anchor-box reference model (tests + the dry-run SignalK service).
+# Version: v2 (2026-10-02) - v2: tzdata + astral (boattime tests), ziglang (host C compiler for the C port tests)
+# Scope: STANDALONE UTILITY - reference / test tooling.
+# Architecture: <your-project-dir>/reference; stdlib otherwise.
+# Invocation: python -m venv .venv; .venv\Scripts\python -m pip install -r requirements.txt
+pytest>=9
+websockets>=15
+tzdata
+astral>=3
+ziglang

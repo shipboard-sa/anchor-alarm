@@ -1,0 +1,14 @@
+build/
+build-*/
+managed_components/
+sdkconfig
+sdkconfig.old
+.venv/
+.pytest_cache/
+__pycache__/
+backup/
+keys/
+sdkconfig.secrets
+test_host/*.exe
+test_host/*.pdb
+test_host/vectors/

@@ -1,0 +1,9 @@
+# Purpose: Component-manager dependencies for the anchor box firmware.
+# Version: v2 (2026-10-02) - v2: espressif/mdns (anchor-box.local)
+# Scope: PRODUCTION - anchor-box firmware, live on the box at the helm since 2026-10-02 (installed by signed OTA).
+# Architecture: LVGL v9 (MIT licence) is the only third-party code. Nothing from third-party anchor alarm projects.
+# Invocation: read by idf.py (fetched into managed_components/ on the first build).
+dependencies:
+  idf: ">=6.0"
+  lvgl/lvgl: "~9.2.2"
+  espressif/mdns: "*"

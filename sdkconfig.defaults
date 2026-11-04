@@ -1,0 +1,43 @@
+# Purpose: Default build configuration for the anchor box (ESP32-S3, 16 MB flash, 8 MB octal PSRAM, RGB LCD, LVGL).
+# Version: v5 (2026-10-09) - v5: PSRAM may hold .bss (LVGL's 64 KB pool moves there - ANQ-33). v4 (2026-10-06) - v4: automation-host (Pi) watch ON for the cut-over (ANQ-25, ANC-29); lwIP socket pool 10 -> 16 (ANQ-29, ANC-30). v3: Wi-Fi / lwIP buffers in PSRAM, 5 static RX buffers (the display keeps its internal DMA RAM). v2: signed OTA over Wi-Fi + rollback (SPEC 8); Wi-Fi login in sdkconfig.secrets
+# Scope: PRODUCTION - anchor-box firmware, live on the box at the nav station since 2026-10-02 (installed by signed OTA).
+# Architecture: code/anchor-box; board facts from the Waveshare wiki (N16R8 module).
+# Invocation: read by idf.py on the first build (delete sdkconfig to re-apply).
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_XIP_FROM_PSRAM=y
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_FREERTOS_HZ=1000
+CONFIG_LCD_RGB_ISR_IRAM_SAFE=y
+CONFIG_LV_COLOR_DEPTH_16=y
+CONFIG_LV_FONT_MONTSERRAT_20=y
+CONFIG_LV_FONT_MONTSERRAT_28=y
+CONFIG_LV_FONT_MONTSERRAT_48=y
+CONFIG_LV_USE_ARC=y
+# Signed OTA (SPEC 8.2-8.3): only images signed with keys/anchorbox_signing_key.pem are accepted on update
+CONFIG_SECURE_SIGNED_APPS_NO_SECURE_BOOT=y
+CONFIG_SECURE_SIGNED_APPS_RSA_SCHEME=y
+CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT=y
+CONFIG_SECURE_BOOT_BUILD_SIGNED_BINARIES=y
+CONFIG_SECURE_BOOT_SIGNING_KEY="keys/anchorbox_signing_key.pem"
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+CONFIG_LWIP_LOCAL_HOSTNAME="anchor-box"
+# Wi-Fi / lwIP buffers in PSRAM, so the display keeps its internal DMA RAM
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
+# Small internal-RAM footprint for Wi-Fi (the RGB display needs the internal DMA RAM); TX buffers dynamic -> PSRAM
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=5
+CONFIG_ESP_WIFI_RX_BA_WIN=8
+CONFIG_ESP_WIFI_DYNAMIC_TX_BUFFER=y
+CONFIG_ESP_WIFI_DYNAMIC_RX_BUFFER_NUM=16
+# Automation-host watch ON (ANQ-25 cut-over, ANC-29): polls PI_HOST:PI_PORT health path every 10 s -> DO1 / AL-13
+CONFIG_ANCHORBOX_PI_WATCH=y
+# Socket pool: the HTTP server alone may hold 7 + 3 = 10 sockets (the old whole pool); the host-watch GET, router ping
+# and night-watch GET / POST need their own (ANQ-29, ANC-30)
+CONFIG_LWIP_MAX_SOCKETS=16
+# ANQ-33: let .bss arrays tagged EXT_RAM_BSS_ATTR live in PSRAM (LVGL's 64 KB object pool - top-level CMakeLists.txt)
+CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y

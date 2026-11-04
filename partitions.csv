@@ -1,0 +1,12 @@
+# Purpose: Partition table for the anchor box (16 MB flash): two 4 MB app slots for signed OTA updates
+#   with rollback, OTA data, NVS (Wi-Fi), PHY calibration.
+# Version: v2 (2026-10-02) - v2: factory -> ota_0 / ota_1 + otadata (Lee 10-02: OTA over Wi-Fi, SPEC 8)
+# Scope: PRODUCTION - anchor-box firmware, live on the box at the nav station since 2026-10-02 (installed by signed OTA).
+# Architecture: code/anchor-box; named in sdkconfig.defaults. Changing it needs a USB flash.
+# Invocation: read by idf.py build / flash.
+# Name,   Type, SubType, Offset,   Size
+nvs,      data, nvs,     0x9000,   0x6000,
+otadata,  data, ota,     0xf000,   0x2000,
+phy_init, data, phy,     0x11000,  0x1000,
+ota_0,    app,  ota_0,   0x20000,  4M,
+ota_1,    app,  ota_1,   0x420000, 4M,
