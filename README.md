@@ -18,6 +18,10 @@ circle to the boat's swing and alarms - on screen and on the CAMS panel's **Anch
 leaves it. Waveshare ESP32-S3-Touch-LCD-4.3B, 800 x 480 touch LCD, on the NMEA 2000 bus. Nothing from the original developer's
 anchor-drag-pro is used: his code is "License: Proprietary" (10-02, ANC-01).
 
+## Architecture
+
+![Anchor alarm system architecture](architecture.svg)
+
 Start at [CHECKPOINT.md](CHECKPOINT.md); requirements in [SPEC.md](SPEC.md); design in [wiki/Home.md](wiki/Home.md).
 
 ## Status - LIVE since 2026-10-02 (now firmware v0.9.0)
